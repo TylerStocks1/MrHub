@@ -1,13 +1,13 @@
 
 use anyhow::Context as _;
 use rand::seq::SliceRandom;
-
 use serenity::all::{CreateCommand, CreateInteractionResponse, CreateInteractionResponseMessage, Interaction, Message};
 use serenity::{all::GuildId, async_trait};
 use serenity::model::gateway::Ready;
 use serenity::prelude::*;
 use shuttle_runtime::SecretStore;
 use tracing::info;
+
 
 use tokio::time::{self, Duration};
 use serenity::model::id::ChannelId;
@@ -24,37 +24,40 @@ impl EventHandler for Bot {
         info!("{} is connected!", ready.user.name);
 
         // Register commands with the guild
-        let guild_id = GuildId::new(1219770752044367983); // Devhub ID for MRHUB HIMSELF
-        let commands = vec![CreateCommand::new("hello").description("Say hello")];
-        let commands = guild_id.set_commands(&ctx.http, commands).await.unwrap();
+        let guild_id: GuildId = GuildId::new(1219770752044367983); // Devhub ID for MRHUB HIMSELF
+        let commands: Vec<CreateCommand> = vec![CreateCommand::new("toggle").description("he will speak bullshit")];
+        let commands: Vec<serenity::model::prelude::Command> = guild_id.set_commands(&ctx.http, commands).await.unwrap();
         info!("Registered commands: {:#?}", commands);
 
         // Start the periodic task
-        let channel_id = ChannelId::from(1273447883735040051); // Currently in his own channel
-        let interval = time::interval(Duration::from_secs(60)); // Sends message into the channel every 60 seconds!! ( he is so smart :> )
+        let channel_id: ChannelId = ChannelId::from(1273447883735040051); // Currently in his own channel
+        let interval: time::Interval = time::interval(Duration::from_secs(60)); // Sends message into the channel every 60 seconds!! ( he is so smart :> )
+        let chat_toggle: bool = true;
 
-        tokio::spawn(async move {
-            let mut interval = interval;
-            loop {
-                interval.tick().await;
-
-                // Generate a sentence and send it
-                let messages = read_messages_from_file("message_log.json").await;
-                if !messages.is_empty() {
-                    let sentence = generate_sentence(&messages);
-                    if let Err(why) = channel_id.say(&ctx.http, sentence).await {
-                        eprintln!("Error sending message: {:?}", why);
+        if chat_toggle {
+            tokio::spawn(async move {
+                let mut interval: time::Interval = interval;
+                loop {
+                    interval.tick().await;
+                        // Generate a sentence and send it
+                    let messages: String = read_messages_from_file("message_log.json").await;
+                    if !messages.is_empty() {
+                        let sentence: String = generate_sentence(&messages);
+                        if let Err(why) = channel_id.say(&ctx.http, sentence).await {
+                             eprintln!("Error sending message: {:?}", why);
+                        }
                     }
                 }
-            }
-        });
+            });
+        }
+
     }
 
     async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
         if let Interaction::Command(command) = interaction {
             let respond_to = command.user.mention();
             let response_content = match command.data.name.as_str() {
-                "hello" => format!("Hello, {}!", respond_to),
+                "toggle" => format!("Hello, {}!", respond_to),
                 _ => unreachable!("Unknown command"),
             };
 
