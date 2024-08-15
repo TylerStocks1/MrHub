@@ -1,32 +1,33 @@
-use std::fs::File;
-use std::io::{self, BufRead};
-use std::path::Path;
+use tokio::fs::File;
+use tokio::io::AsyncReadExt;
 use serde_json::Value;
+//couldnt tell you one thing this dose, just works :) thanks again reddit 
+pub async fn read_messages_from_file(path: &str) -> String {
+    let mut file = match File::open(path).await {
+        Ok(f) => f,
+        Err(_) => return String::new(),
+    };
 
-pub fn read_messages_from_file(file_path: &str) -> Vec<String> {
-    let mut messages = Vec::new();
-
-    if let Ok(lines) = read_lines(file_path) {
-        for line in lines {
-            if let Ok(line) = line {
-                // Parse each line as JSON and add it to the list
-                if let Ok(value) = serde_json::from_str::<Value>(&line) {
-                    if let Some(content) = value.as_str() {
-                        messages.push(content.to_string());
-                    }
-                }
-            }
-        }
+    let mut contents = String::new();
+    if let Err(err) = file.read_to_string(&mut contents).await {
+        eprintln!("Failed to read file: {}", err);
+        return String::new();
     }
 
-    messages
+    // some json parsing 
+    let json: Value = match serde_json::from_str(&contents) {
+        Ok(v) => v,
+        Err(_) => return String::new(),
+    };
+
+    // Ensure that the json is a single string
+    json.as_str().unwrap_or("").to_string()
 }
 
-// Helper function to read lines from a file
-fn read_lines<P>(filename: P) -> io::Result<io::Lines<io::BufReader<File>>>
-where
-    P: AsRef<Path>,
-{
-    let file = File::open(filename)?;
-    Ok(io::BufReader::new(file).lines())
+pub async fn write_messages_to_file(path: &str, messages: &str) {
+    let json_data = serde_json::to_string(&messages).expect("Failed to serialize messages");
+
+    if let Err(e) = tokio::fs::write(path, json_data).await {
+        eprintln!("Failed to write to file: {}", e);
+    }
 }
