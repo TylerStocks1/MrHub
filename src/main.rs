@@ -31,7 +31,7 @@ impl EventHandler for Bot {
 
         // Start the periodic task
         let channel_id: ChannelId = ChannelId::from(1273447883735040051); // Currently in his own channel
-        let interval: time::Interval = time::interval(Duration::from_secs(60)); // Sends message into the channel every 60 seconds!! ( he is so smart :> )
+        let interval: time::Interval = time::interval(Duration::from_secs(600)); // Sends message into the channel every 60 seconds!! ( he is so smart :> )
         let chat_toggle: bool = true;
 
         if chat_toggle {
